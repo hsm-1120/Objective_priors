@@ -2,7 +2,7 @@ import numpy as np
 import scipy.special as spc
 import math
 from numba import jit, prange
-from scipy.integrate import simpson, quadrature
+from scipy.integrate import simp as simpson, quadrature
 from utils import rep1, jrep1, simpson_numb
 from data import get_S_A
 from config import IM, path, C
