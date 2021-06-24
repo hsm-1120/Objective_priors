@@ -96,10 +96,13 @@ def p_z_cond_a_theta_binary(z,a,theta) :
     p = np.ones((l,1))
     #for i,t in enumerate(theta) :
     for i in prange(l) :
-        # for k,zk in enumerate(z) :
-        for k in prange(z.shape[0]) :
-            phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1])[0])
-            p[i] *= z[k]*phi + (1-z[k])*(1-phi)
+        if np.any(theta[i]<=0) :
+            p[i] = 0
+        else :
+            # for k,zk in enumerate(z) :
+            for k in prange(z.shape[0]) :
+                phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1])[0])
+                p[i] *= z[k]*phi + (1-z[k])*(1-phi)
     return p.flatten()
 
 def posterior(theta, z, a, prior, cond=p_z_cond_a_theta_binary) :
