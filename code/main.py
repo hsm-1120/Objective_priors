@@ -18,3 +18,27 @@ os.chdir(r"Z:/code")
 #     theta_simul = HM_k(np.ones(2), J, 1000)
 #     post_const = np.mean(p_z_cond_a_theta_binary(z,a,theta_simul))
 #     KL[i] = Kullback_Leibler(posterior_func(z, a, post_const, J)/post_const, J)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

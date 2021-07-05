@@ -22,7 +22,7 @@ theta_grid1, theta_grid2 = np.meshgrid(theta_tab[:,0], theta_tab[:,1])
 ##
 
 
-J_MC = fisher.Jeffreys_MC(theta_tab[:,0], theta_tab[:,1], A)
+# J_MC = fisher.Jeffreys_MC(theta_tab[:,0], theta_tab[:,1], A)
 
 
 a_tab, h_a = np.linspace(10**-10, 2*A.max(), num=1000, retstep=True)
@@ -37,7 +37,7 @@ J_s = fisher.Jeffreys_simpson(theta_tab[:,0], theta_tab[:,1], a_tab)
 plt.figure(1)
 plt.clf()
 axes = plt.axes(projection="3d")
-axes.plot_surface(theta_grid1, theta_grid2, J_MC)
+# axes.plot_surface(theta_grid1, theta_grid2, J_MC)
 
 plt.title('Jeffreys Monte-Carlo')
 axes.set_xlabel('alpha')
@@ -67,6 +67,21 @@ plt.title('Jeffreys via Simson')
 axes.set_xlabel('alpha')
 axes.set_ylabel('beta')
 axes.set_zlabel('J_s')
+
+
+
+j_min, j_max = 0, np.max(J_t)
+levels = np.linspace(j_min, j_max, 15)
+
+plt.figure(figsize=(4.5, 2.5))
+plt.contourf(theta_grid1, theta_grid2, J_s, cmap='viridis', levels=levels)
+plt.title(r'Objective prior')
+plt.axis([theta_grid1.min(), theta_grid1.max(), theta_grid2.min(), theta_grid2.max()])
+plt.colorbar()
+plt.xlabel(r"$\alpha$")
+plt.ylabel(r"$\beta$")
+plt.tight_layout()
+plt.show()
 
 ##
 # test de méthode de simpson via numba

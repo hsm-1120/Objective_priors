@@ -23,14 +23,21 @@ def HM_gauss(z0, pi, max_iter=5000, sigma_prop=10**-2*np.eye(2)) :
 def HM_k(z0, pi, k, max_iter=5000, sigma_prop=10**-2) :
     d = z0.shape[0]
     z_v = jrep0(z0, k)
+    u = len(np.asarray(sigma_prop).shape)
+    if u==0 :
+        sig = sigma_prop*np.eye(2)
+    else :
+        sig = sigma_prop+0
     for n in range(max_iter) :
         pi_zv = pi(z_v)
         z = np.zeros_like(z_v)
         for i,z_vi in enumerate(z_v) :
-            z[i] = np.asarray(z_vi) + np.asarray([sigma_prop])@np.eye(d)@rd.randn(d)
+            z[i] = np.asarray(z_vi) + sig@rd.randn(d)
         pi_z = pi(z)
         log_alpha = np.log(pi_zv)-np.log(pi_z)
         rand = np.log(rd.rand(d))<log_alpha
+        # alpha = pi_z / pi_zv
+        # rand = rd.rand(k)<alpha
         #pi_z_vi = pi(z_vi)
         #pi_zi = pi(zi)
         #log_alpha = np.log(pi_z_vi)-np.log(pi_zi)
@@ -90,20 +97,30 @@ def Kullback_Leibler_simpson_numb(p_tab, q_tab, x_tab) :
 
 ## distribs :
 
-@jit(nopython=True, parallel=True, cache=True)
+#@jit(nopython=True, parallel=True, cache=True)
 def p_z_cond_a_theta_binary(z,a,theta) :
     l = theta.shape[0]
-    p = np.ones((l,1))
+    n = a.shape[0]
+    logp = np.zeros((l,n,1))
+    ind0 = np.zeros(l, dtype='int')
     #for i,t in enumerate(theta) :
     for i in prange(l) :
         if np.any(theta[i]<=0) :
-            p[i] = 0
+            ind0[i] = 1
         else :
             # for k,zk in enumerate(z) :
-            for k in prange(z.shape[0]) :
-                phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1])[0])
-                p[i] *= z[k]*phi + (1-z[k])*(1-phi)
-    return p.flatten()
+            for k in prange(n) :
+                phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1]))
+                if phi<1e-11 or phi>1-1e-11 :
+                    phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
+                logp[i,k] = z[k]*np.log(phi) + (1-z[k])*np.log((1-phi))
+    p = np.exp(logp.sum(axis=1)/n).flatten()
+    # print((p==0).sum())
+    # p[ind0] = 0
+    p = p*(1-ind0)
+    # print(ind0)
+    # print((p==0).sum())
+    return p
 
 def posterior(theta, z, a, prior, cond=p_z_cond_a_theta_binary) :
     p = cond(z,a,theta)*prior(theta)
