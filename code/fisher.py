@@ -3,7 +3,7 @@ import scipy.special as spc
 import math
 from numba import jit, prange
 from scipy.integrate import simps as simpson, quadrature
-from utils import rep1, jrep1, simpson_numb
+from utils import rep1, jrep1, simpson_numb, phi_numb
 from data import get_S_A
 from config import IM, path, C
 
@@ -108,31 +108,34 @@ def Fisher_Simpson(alpha_grid, beta_grid, a_tab):
     I = np.zeros((alp_n,bet_n,2,2))
     for i,alpha in enumerate(alpha_grid) :
         for j, beta in enumerate(beta_grid) :
-            g = np.log(a_tab/alpha)/beta
-            phi_f_inv = (1/2 + 1/2*spc.erf(g) + (spc.erf(g)==-1))**(-1) * (spc.erf(g)!=-1)
-            phi_f_inv_op = (1/2 - 1/2*spc.erf(g) + (spc.erf(g)==1))**(-1) * (spc.erf(g)!=1)
-            f_A_a = f_A_mult(a_tab, a_n)
-            funcA11 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA12 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
-            funcA21 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA22 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
-            funcA31 = np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA32 = np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
-            A11 = simpson(funcA11, a_tab)
-            A12 = simpson(funcA12, a_tab)
-            A21 = simpson(funcA21, a_tab)
-            A22 = simpson(funcA22, a_tab)
-            A31 = simpson(funcA31, a_tab)
-            A32 = simpson(funcA32, a_tab)
-            I[i,j,0,0] = (A31+A32)/alpha**2/beta**2
-            I[i,j,1,0] = (A12+A11)/alpha/beta**3
-            I[i,j,0,1] = I[i,j,1,0]+0
-            I[i,j,1,1] = (A21 + A22)/beta**4
+            if alpha<=0 or beta<=0 :
+                I[i,j] = 0
+            else :
+                g = np.log(a_tab/alpha)/beta
+                phi_f_inv = (1/2 + 1/2*spc.erf(g) + (spc.erf(g)==-1))**(-1) * (spc.erf(g)!=-1)
+                phi_f_inv_op = (1/2 - 1/2*spc.erf(g) + (spc.erf(g)==1))**(-1) * (spc.erf(g)!=1)
+                f_A_a = f_A_mult(a_tab, a_n)
+                funcA11 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA12 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                funcA21 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA22 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                funcA31 = np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA32 = np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                A11 = simpson(funcA11, a_tab)
+                A12 = simpson(funcA12, a_tab)
+                A21 = simpson(funcA21, a_tab)
+                A22 = simpson(funcA22, a_tab)
+                A31 = simpson(funcA31, a_tab)
+                A32 = simpson(funcA32, a_tab)
+                I[i,j,0,0] = (A31+A32)/alpha**2/beta**2
+                I[i,j,1,0] = (A12+A11)/alpha/beta**3
+                I[i,j,0,1] = I[i,j,1,0]+0
+                I[i,j,1,1] = (A21 + A22)/beta**4
             #J[i,j] = np.sqrt(I[i,j,0,0]*I[i,j,1,1] - I[i,j,0,1]**2)
     return I
 
 
-@jit(nopython=True,parallel=True)
+@jit(nopython=True,parallel=True, cache=True)
 def Fisher_rectangles(alpha_grid, beta_grid, a_tab, h_a):
     alp_n = len(alpha_grid)
     bet_n = len(beta_grid)
@@ -167,51 +170,91 @@ def Fisher_rectangles(alpha_grid, beta_grid, a_tab, h_a):
     return I
 
 
-@jit(nopython=True,parallel=True)
+@jit(nopython=True, cache=True, parallel=True)
 def Fisher_Simpson_Numb(alpha_grid, beta_grid, a_tab) :
     alp_n = len(alpha_grid)
     bet_n = len(beta_grid)
     a_n = len(a_tab)
-    I = np.zeros((alp_n,bet_n,2,2))
+    I = np.zeros((alp_n,bet_n,2,2,1))
     # for i,alpha in enumerate(alpha_grid) :
     #     for j, beta in enumerate(beta_grid) :
-    for i in prange(alp_n) :
+    for i in range(alp_n) :
         alpha = alpha_grid[i]+0.0
-        for j in prange(bet_n) :
+        for j in range(bet_n) :
             beta = beta_grid[j]+0.0
-            #
-            g = np.log(a_tab/alpha)/beta
-            phi_f_inv = np.zeros(a_n)
-            phi_f_inv_op = np.zeros(a_n)
-            #for l,gamma in enumerate(g) :
-            for l in prange(a_n) :
-                gamma = g[l]+0.0
+            if alpha<=0 or beta<=0 :
+                I[i,j] = 0
+            else :
                 #
-                er = math.erf(gamma)
-                phi_f_inv[l] = (1/2 + 1/2*er + (er==-1))**(-1) * (er!=-1)
-                phi_f_inv_op[l] = (1/2 - 1/2*er + (er==1))**(-1) * (er!=1)
+                g = np.log(a_tab/alpha)/beta
+                phi_f_inv = np.zeros(a_n)
+                phi_f_inv_op = np.zeros(a_n)
+                #for l,gamma in enumerate(g) :
+                for l in prange(a_n) :
+                    gamma = g[l]+0.0
+                    #
+                    er = math.erf(gamma)
+                    phi_f_inv[l] = (1/2 + 1/2*er + (er==-1))**(-1) * (er!=-1)
+                    phi_f_inv_op[l] = (1/2 - 1/2*er + (er==1))**(-1) * (er!=1)
+                #f_A_a = f_A_mult_numb(a_tab, a_n)
+                f_A_a = np.exp(-((jrep1(A, a_n)-a_tab)/h)**2).sum(axis=0)/(n*h)/np.sqrt(np.pi)
+                #
+                funcA11 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA12 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                funcA21 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA22 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                funcA31 = np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
+                funcA32 = np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+                A11 = simpson_numb(funcA11, a_tab)
+                A12 = simpson_numb(funcA12, a_tab)
+                A21 = simpson_numb(funcA21, a_tab)
+                A22 = simpson_numb(funcA22, a_tab)
+                A31 = simpson_numb(funcA31, a_tab)
+                A32 = simpson_numb(funcA32, a_tab)
+                I[i,j,0,0] = (A31+A32)/alpha**2/beta**2
+                I[i,j,1,0] = (A12+A11)/alpha/beta**3
+                I[i,j,0,1] = I[i,j,1,0]+0
+                I[i,j,1,1] = (A21 + A22)/beta**4
+                #J[i,j] = np.sqrt(I[i,j,0,0]*I[i,j,1,1] - I[i,j,0,1]**2)
+    return I[:,:,:,:,0]
+
+
+@jit(nopython=True, parallel=True, cache=True)
+def Fisher_Simpson_Numb_paral(alpha_grid, beta_grid, a_tab) :
+    alp_n = len(alpha_grid)
+    bet_n = len(beta_grid)
+    a_n = len(a_tab)
+    I = np.zeros((alp_n,bet_n,2,2))
+    phi_f_inv = np.zeros((alp_n, bet_n, a_n))
+    phi_f_inv_op = np.zeros((alp_n, bet_n, a_n))
+    f_A_a = np.exp(-((jrep1(A, a_n)-a_tab)/h)**2).sum(axis=0)/(n*h)/np.sqrt(np.pi)
+    phi_f_inv, phi_f_inv_op = phi_numb(alpha_grid, beta_grid, a_tab)
             #f_A_a = f_A_mult_numb(a_tab, a_n)
-            f_A_a = np.exp(-((jrep1(A, a_n)-a_tab)/h)**2).sum(axis=0)/(n*h)/np.sqrt(np.pi)
-            #
-            funcA11 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA12 = np.log(a_tab/alpha)*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
-            funcA21 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA22 = np.log(a_tab/alpha)**2*np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
-            funcA31 = np.exp(-2*(g**2))/np.pi * phi_f_inv *f_A_a
-            funcA32 = np.exp(-2*(g**2))/np.pi * phi_f_inv_op *f_A_a
+
+    gg = np.zeros(a_n)
+    for i2 in prange(alp_n):
+        for j2 in prange(bet_n) :
+            alpha2 = alpha_grid[i2]+0.0
+            beta2 = beta_grid[j2]+0.0
+            gg[:] = np.log(a_tab/alpha2)/beta2
+
+            funcA11 = np.log(a_tab/alpha2)*np.exp(-2*(gg**2))/np.pi * phi_f_inv[i2,j2] *f_A_a
+            funcA12 = np.log(a_tab/alpha2)*np.exp(-2*(gg**2))/np.pi * phi_f_inv_op[i2,j2] *f_A_a
+            funcA21 = np.log(a_tab/alpha2)**2*np.exp(-2*(gg**2))/np.pi * phi_f_inv[i2,j2] *f_A_a
+            funcA22 = np.log(a_tab/alpha2)**2*np.exp(-2*(gg**2))/np.pi * phi_f_inv_op[i2,j2] *f_A_a
+            funcA31 = np.exp(-2*(gg**2))/np.pi * phi_f_inv[i2,j2] *f_A_a
+            funcA32 = np.exp(-2*(gg**2))/np.pi * phi_f_inv_op[i2,j2] *f_A_a
             A11 = simpson_numb(funcA11, a_tab)
             A12 = simpson_numb(funcA12, a_tab)
             A21 = simpson_numb(funcA21, a_tab)
             A22 = simpson_numb(funcA22, a_tab)
             A31 = simpson_numb(funcA31, a_tab)
             A32 = simpson_numb(funcA32, a_tab)
-            I[i,j,0,0] = (A31+A32)/alpha**2/beta**2
-            I[i,j,1,0] = (A12+A11)/alpha/beta**3
-            I[i,j,0,1] = I[i,j,1,0]+0
-            I[i,j,1,1] = (A21 + A22)/beta**4
-            #J[i,j] = np.sqrt(I[i,j,0,0]*I[i,j,1,1] - I[i,j,0,1]**2)
+            I[i2,j2,0,0] = (A31+A32)/alpha2**2/beta2**2
+            I[i2,j2,1,0] = (A12+A11)/alpha2/beta2**3
+            I[i2,j2,0,1] = I[i2,j2,1,0]+0
+            I[i2,j2,1,1] = (A21 + A22)/beta2**4
     return I
-
 
 
 
@@ -241,7 +284,10 @@ def Jeffreys_simpson_numba(alpha_grid, beta_grid, a_tab) :
     I = Fisher_Simpson_Numb(alpha_grid, beta_grid, a_tab)
     return np.sqrt(I[:,:,0,0]*I[:,:,1,1] - I[:,:,1,0]**2)
 
-
+@jit(nopython=True,parallel=True, cache=True)
+def Jeffreys_simpson_numba_paral(alpha_grid, beta_grid, a_tab) :
+    I = Fisher_Simpson_Numb_paral(alpha_grid, beta_grid, a_tab)
+    return np.sqrt(I[:,:,0,0]*I[:,:,1,1] - I[:,:,1,0]**2)
 
 
 

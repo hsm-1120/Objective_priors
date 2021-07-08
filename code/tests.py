@@ -5,6 +5,7 @@ os.chdir(r"Z:/code")
 import pylab as plt
 import numpy as np
 import numpy.random as rd
+import math
 import fisher
 import numba
 from numba import jit, prange
@@ -12,6 +13,9 @@ from config import IM, C, path
 from data import get_S_A
 import stat_functions
 from utils import jrep1, jrep0
+from scipy import optimize
+from scipy.special import erf
+
 
 plt.ion()
 plt.show()
@@ -22,10 +26,10 @@ S_sq, A_sq = get_S_A(path, IM, C)
 S_tot, A_tot = get_S_A(path, IM, C, quantile=0, rate=100)
 
 init = A_tot.shape[0]
-desired = 10**4
+desired = 50
 rate = desired/init*100
 
-S, A = get_S_A(path, IM, C, quantile=0, rate=rate)
+S, A = get_S_A(path, IM, C, quantile=0, rate=rate, shuffle = False, relative=False)
 
 ##
 
@@ -155,7 +159,7 @@ plt.figure(1)
 plt.clf()
 axes = plt.axes(projection="3d")
 # axes.plot_surface(theta_grid1, theta_grid2, np.exp(pp.mean(axis=-1)))
-axes.plot_surface(theta_grid1, theta_grid2, pp)
+axes.plot_surface(theta_grid1, theta_grid2, pp.T)
 
 # plt.title('Jeffreys Monte-Carlo')
 axes.set_xlabel('alpha')
@@ -166,7 +170,7 @@ j_min, j_max = 0, np.max(pp)
 levels = np.linspace(j_min, j_max, 15)
 
 plt.figure(figsize=(4.5, 2.5))
-plt.contourf(theta_grid1, theta_grid2, pp, cmap='viridis', levels=levels)
+plt.contourf(theta_grid1, theta_grid2, pp.T, cmap='viridis', levels=levels)
 plt.title(r'posterior with exp prior')
 plt.axis([theta_grid1.min(), theta_grid1.max(), theta_grid2.min(), theta_grid2.max()])
 plt.colorbar()
@@ -204,13 +208,311 @@ plt.show()
 
 ###
 
+# calcul du max de vraissemblance
+
+
+def opp_log_vraiss(theta) :
+    a = A+0
+    z = S+0
+    # l = theta.shape[0]
+    n = a.shape[0]
+    logp = np.zeros((n,1))
+    # ind0 = np.zeros(l, dtype='int')
+    #for i,t in enumerate(theta) :
+    if np.any(theta<=0) :
+        return np.inf
+    else:
+        # for k,zk in enumerate(z) :
+        for k in prange(n) :
+            phi = 1/2+1/2*math.erf((np.log(a[k]/theta[0])/theta[1]))
+            if phi<1e-11 or phi>1-1e-11 :
+                phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
+            logp[k] = z[k]*np.log(phi) + (1-z[k])*np.log((1-phi))
+    # p = np.exp(logp.sum(axis=1)/n).flatten()
+    # print((p==0).sum())
+    # p[ind0] = 0
+    # p = p*(1-ind0)
+    # print(ind0)
+    # print((p==0).sum())
+    return -logp.mean(axis=0).flatten()
+
+
+
+theta_ML = optimize.minimize(opp_log_vraiss, np.array([3,0.3]), tol=10**-5)
+
+
+
+pp = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        pp[i,j] = opp_log_vraiss(np.array([alpha, beta]))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, -pp.T)
+
+plt.title(r'log vraiss, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+pp = pp-pp.min()
+
+
+ppe = np.exp(-pp*A.shape[0])
+
+
+plt.figure()
+plt.clf()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, ppe.T)
+
+plt.title(r'vraiss, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+##
+
+JJ = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        a_tab = np.exp(np.linspace(np.log(alpha)-4*beta, np.log(alpha)+4*beta, 40))
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = opp_log_vraiss(np.array([alpha, beta]))
+        JJ[i,j] = np.log(fisher.Jeffreys_simpson(np.array([alpha]).reshape(1,1), np.array([alpha]).reshape(1,1), a_tab))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+ppj = -pp*A.shape[0] + JJ
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, ppj.T)
+
+plt.title(r'log post (prior=J), num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, np.exp(ppj-ppj.max()).T)
+
+plt.title(r'post (prior=J), num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+##
+#MLE with vraiss (not log vraiss)
+
+n = A.shape[0]
+
+def opp_vraiss(theta) :
+    a = A+0
+    z = S+0
+    # l = theta.shape[0]
+    n = a.shape[0]
+    logp = np.zeros((n,1))
+    # ind0 = np.zeros(l, dtype='int')
+    #for i,t in enumerate(theta) :
+    if np.any(theta<=0) :
+        return -np.inf
+    else:
+        # for k,zk in enumerate(z) :
+        t = 0
+        for k in prange(n) :
+            phi = 1/2+1/2*math.erf((np.log(a[k]/theta[0])/theta[1]))
+            if (phi<1e-11 and z[k]==0) or (phi>1-1e-11 and z[k]==1) :
+                logp[k] = 0
+                t+=1
+            else :
+                if (phi<1e-11 and z[k]==1) or (phi>1-1e-11 and z[k]==0) :
+                    phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
+                logp[k] = z[k]*np.log(phi) + (1-z[k])*np.log((1-phi))
+    # p = np.exp(logp.sum(axis=1)/n).flatten()
+    # print((p==0).sum())
+    # p[ind0] = 0
+    # p = p*(1-ind0)
+    # print(ind0)
+    # print((p==0).sum())
+    # logp = logp - logp.max()
+    # print(t)
+    return -np.exp(logp.mean(axis=0).flatten())#+62)
 
 
 
 
+def jac_vrais(theta) :
+    alph = theta[0]
+    bet = theta[1]
+    gam = np.log(A/alph)/bet
+    phi = 1/2+1/2*erf(gam)
+    phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11) + ((phi<1-1e-11)*(phi>1e-11))*phi
+    partial_alpha_logp = -1/(alph*bet) * S * np.exp(-gam**2)/np.sqrt(np.pi)/phi + 1/(alph*bet) * (1-S) * np.exp(-gam**2)/np.sqrt(np.pi)/(1-phi)
+    partial_bet_logp = -gam/bet * S * np.exp(-gam**2)/np.sqrt(np.pi)/phi + gam/bet * (1-S) * np.exp(-gam**2)/np.sqrt(np.pi)/(1-phi)
+    j1 = partial_alpha_logp.sum()*opp_vraiss(theta)
+    j2 = partial_bet_logp.sum()*opp_vraiss(theta)
+    return np.array([j1,j2])
+
+
+
+theta_ML2 = optimize.minimize(opp_vraiss, np.array([8,0.27]))
+
+
+ee = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = opp_log_vraiss(np.array([alpha, beta]))
+        ee[i,j] = opp_vraiss(np.array([alpha, beta]))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, -ee.T)
+
+plt.title(r'vraiss, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+##
+
+ll = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = opp_log_vraiss(np.array([alpha, beta]))
+        ll[i,j] = stat_functions.likelyhood(S,A,np.array([[alpha, beta]]))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, ll.T)
+
+plt.title(r'vraiss, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+def liky(theta):
+    # return stat_functions.likelyhood(S,A,theta.reshape(1,2))
+    return likelyhood(S,A, theta.reshape(1,2))
+
+th_last = optimize.minimize(liky, np.array([3,0.4]), tol=10**-50)
+
+##
+
+# log_post_tracés et max
+
+def opp_log_post(theta) :
+    I = fisher.Fisher_Simpson(theta[0].reshape(1,1), theta[1].reshape(1,1), a_tab)
+    ovr = opp_log_vraiss(theta)
+    J = 1/2 * np.log(I[0,0,0,0]*I[0,0,1,1] - I[0,0,1,0]**2)/A.shape[0]
+    return ovr - J
+
+th_post_ML = optimize.minimize(opp_log_post, np.array([3,0.3]))
+
+
+
+##
+
+# moyennes du post
+
+post = posterior_func(S,A,exponantial_prior)
+
+post_the = HM_k_gauss(np.ones(2), post, 30, max_iter=30, sigma_prop=np.array([[1,0],[0,0.6]]))
+
+
+plt.figure()
+plt.plot(post_the[:,0], post_the[:,1])
+plt.title(r'$\theta\sim p(\theta|S,A)$, prior=exp, num data={}'.format(A.shpae[0]))
+
+
+##
+
+pp = np.zeros((num_theta,num_theta))
+pp2 = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        pp[i,j] = stat_functions.log_vrais(S,A, np.array([[alpha, beta]]))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        pp2[i,j] = stat_functions.log_post_jeff(np.array([[alpha, beta]]),S,A)
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
 
 
 
 
+plt.figure()
+axes = plt.axes(projection="3d")
 
+axes.plot_surface(theta_grid1, theta_grid2, pp.T)
+
+plt.title(r'log vraiss, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, pp2.T)
+
+plt.title(r'log post, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
 

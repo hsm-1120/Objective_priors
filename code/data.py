@@ -15,11 +15,14 @@ def get_S_A(path, IM, C_S=10**-2, shuffle=True, quantile=0, rate=100, relative=T
     S = S[(A>qA1)*(A<qA2)]
     A = A[(A>qA1)*(A<qA2)]
 
+
     n = len(A)
-    ids = np.arange(n)
-    np.random.shuffle(ids)
-    A = A[ids]+0
-    S = S[ids]+0
+    if shuffle :
+        n = len(A)
+        ids = np.arange(n)
+        np.random.shuffle(ids)
+        A = A[ids]+0
+        S = S[ids]+0
 
     if relative==True :
         n0 = (S==0).sum()
@@ -33,5 +36,12 @@ def get_S_A(path, IM, C_S=10**-2, shuffle=True, quantile=0, rate=100, relative=T
         num = int(n*rate/100)
         A = A[:num]+0
         S = S[:num]+0
+
+    if shuffle :
+        n = len(A)
+        ids2 = np.arange(n)
+        np.random.shuffle(ids2)
+        A = A[ids2]+0
+        S = S[ids2]+0
 
     return S, A

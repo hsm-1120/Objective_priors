@@ -1,5 +1,6 @@
-from numba import jit
+from numba import jit, prange
 import numpy as np
+import math
 
 
 
@@ -37,7 +38,7 @@ def jrep1(array, N) :
 
 ## for integral calculations
 
-@jit(nopython=True,  cache=True)
+@jit(nopython=True, parallel=True, cache=True)
 def simpson_numb(y, x) :
     n = y.shape[0]
     lim_id = (n+1)//2
@@ -51,7 +52,25 @@ def simpson_numb(y, x) :
     # return y.sum()*h
 
 
-
+@jit(nopython=True, parallel=True, cache=True)
+def phi_numb(alpha_grid, beta_grid, a_tab) :
+    alp_n = len(alpha_grid)
+    bet_n = len(beta_grid)
+    a_n = len(a_tab)
+    phi_f_inv = np.zeros((alp_n, bet_n, a_n))
+    phi_f_inv_op = np.zeros((alp_n, bet_n, a_n))
+    for i in prange(alp_n) :
+        for j in prange(bet_n) :
+            for l in prange(a_n) :
+                alpha = alpha_grid[i]+0.0
+                beta = beta_grid[j]+0.0
+                g = np.log(a_tab/alpha)/beta
+                gamma = g[l]+0.0
+                #
+                er = math.erf(gamma)
+                phi_f_inv[i,j,l] = (1/2 + 1/2*er + (er==-1))**(-1) * (er!=-1)
+                phi_f_inv_op[i,j,l] = (1/2 - 1/2*er + (er==1))**(-1) * (er!=1)
+    return phi_f_inv, phi_f_inv_op
 
 
 

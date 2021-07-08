@@ -3,7 +3,7 @@ import numpy.random as rd
 import math
 from numba import jit, prange
 from utils import simpson_numb, jrep0, jrep1
-from fisher import Jeffreys_rectangles, Jeffreys_simpson
+from fisher import Jeffreys_rectangles, Jeffreys_simpson, Jeffreys_simpson_numba, Fisher_Simpson, Fisher_Simpson_Numb
 from distributions import gen_log_norm_cond, log_norm_conditionnal
 
 
@@ -20,10 +20,11 @@ def HM_gauss(z0, pi, max_iter=5000, sigma_prop=10**-2*np.eye(2)) :
     return rk
 
 @jit(nopython=True)
-def HM_k(z0, pi, k, max_iter=5000, sigma_prop=10**-2) :
+def HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma_prop=10**-2) :
     d = z0.shape[0]
     z_v = jrep0(z0, k)
     u = len(np.asarray(sigma_prop).shape)
+    alpha_tab = np.zeros((max_iter,k))
     if u==0 :
         sig = sigma_prop*np.eye(2)
     else :
@@ -31,19 +32,27 @@ def HM_k(z0, pi, k, max_iter=5000, sigma_prop=10**-2) :
     for n in range(max_iter) :
         pi_zv = pi(z_v)
         z = np.zeros_like(z_v)
-        for i,z_vi in enumerate(z_v) :
-            z[i] = np.asarray(z_vi) + sig@rd.randn(d)
+        # for i,z_vi in enumerate(z_v) :
+        for i in range(k) :
+            z[i] = z_v[i] + sig@rd.randn(d)
+            # z[i] = np.asarray(z_vi) + sig@rd.randn(d)
         pi_z = pi(z)
-        log_alpha = np.log(pi_zv)-np.log(pi_z)
-        rand = np.log(rd.rand(d))<log_alpha
+        if pi_log :
+            log_alpha = pi_z - pi_zv
+        else :
+            log_alpha = np.log(pi_z)-np.log(pi_zv)
+        rand = np.log(rd.rand(k))<log_alpha
+        alpha_tab[n] = np.exp(log_alpha)
         # alpha = pi_z / pi_zv
         # rand = rd.rand(k)<alpha
         #pi_z_vi = pi(z_vi)
         #pi_zi = pi(zi)
         #log_alpha = np.log(pi_z_vi)-np.log(pi_zi)
         #rand = np.log(rd.rand())<log_alpha
-        z_v += jrep0(rand, k)*(z-z_v)
-    return z_v
+        z_v += jrep1(rand, d)*(z-z_v)
+    return z_v, alpha_tab
+
+
 
 @jit(nopython=True, parallel=True)
 def HM_k_log_norm(z0, pi, k, max_iter=5000, sigma_prop=10**-2) :
@@ -97,14 +106,35 @@ def Kullback_Leibler_simpson_numb(p_tab, q_tab, x_tab) :
 
 ## distribs :
 
-#@jit(nopython=True, parallel=True, cache=True)
+def likelihood(z, a, theta) :
+    l = theta.shape[0]
+    n = a.shape[0]
+    p = np.zeros((l,n))
+    ind0 = np.zeros(l, dtype='int')
+    for i in range(l) :
+        if np.any(theta[i]<=0) :
+            p[i] = 0
+        else :
+            for k in range(n) :
+                phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1]))
+                if (phi<1e-11 and z[k]==0) or (phi>1-1e-11 and z[k]==1) :
+                    p[i,k] = 1
+                else :
+                    if (phi<1e-11 and z[k]==1) or (phi>1-1e-11 and z[k]==0) :
+                        phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
+                    p[i,k] = z[k]*phi + (1-z[k])*(1-phi)
+    return p.prod(axis=1)
+
+
+
+@jit(nopython=True, parallel=True, cache=True)
 def p_z_cond_a_theta_binary(z,a,theta) :
     l = theta.shape[0]
     n = a.shape[0]
     logp = np.zeros((l,n,1))
     ind0 = np.zeros(l, dtype='int')
     #for i,t in enumerate(theta) :
-    for i in prange(l) :
+    for i in range(l) :
         if np.any(theta[i]<=0) :
             ind0[i] = 1
         else :
@@ -114,7 +144,7 @@ def p_z_cond_a_theta_binary(z,a,theta) :
                 if phi<1e-11 or phi>1-1e-11 :
                     phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
                 logp[i,k] = z[k]*np.log(phi) + (1-z[k])*np.log((1-phi))
-    p = np.exp(logp.sum(axis=1)/n).flatten()
+    p = np.exp(logp.sum(axis=1)).flatten()
     # print((p==0).sum())
     # p[ind0] = 0
     p = p*(1-ind0)
@@ -135,9 +165,69 @@ def posterior_numb(theta, z, a, prior, cond=p_z_cond_a_theta_binary) :
 
 
 
+@jit(nopython=True, parallel=True, cache=True)
+def log_vrais(z,a,theta) :
+    l = theta.shape[0]
+    n = a.shape[0]
+    logp = np.zeros((l,n,1))
+    ind0 = np.zeros(l, dtype='int')
+    #for i,t in enumerate(theta) :
+    for i in range(l) :
+        if np.any(theta[i]<=0) :
+            ind0[i] = 1
+        else :
+            # for k,zk in enumerate(z) :
+            for k in prange(n) :
+                phi = 1/2+1/2*math.erf((np.log(a[k]/theta[i,0])/theta[i,1]))
+                if phi<1e-11 or phi>1-1e-11 :
+                    phi = (phi<1e-11)*1e-11 + (phi>1-1e-11)*(1-1e-11)
+                logp[i,k] = z[k]*np.log(phi) + (1-z[k])*np.log((1-phi))
+    # logp = logp - logp.max()
+    lp = (logp.sum(axis=1)).flatten()
+    # m = lp.max()
+    # lp = lp - lp.max()
+    lp = lp - ind0*1e11
+    return lp
 
 
+@jit(nopython=True, parallel=True, cache=True)
+def log_post_jeff(theta, z, a) :
+    l = theta.shape[0]
+    # if Jeffrey :
+    log_J = np.zeros(l)
+    # for i, t in enumerate(theta) :
+    for i in prange(l) :
+        t = theta[i]
+        alpha = t[0]
+        beta = t[1]
+        if alpha<=0 or beta<=0 :
+            log_J[i] = -1e-11
+        else :
+            a_tab = np.exp(np.linspace(np.log(alpha)-4*beta, np.log(alpha)+4*beta, 40))
+            I = Fisher_Simpson_Numb(np.array([alpha]), np.array([beta]), a_tab)
+            log_J[i] = 1/2 * np.log(I[0,0,0,0]*I[0,0,1,1] - I[0,0,1,0]**2) #/a.shape[0]
+    # else :
+    #     log_J = prior(theta)/a.shape[0]
+    vr = log_vrais(z,a,theta) #/a.shape[0]
+    return vr + log_J
 
+
+def log_post_jeff_notnumb(theta, z, a) :
+    l = theta.shape[0]
+    # if Jeffrey :
+    log_J = np.zeros(l)
+    # for i, t in enumerate(theta) :
+    for i in range(l) :
+        t = theta[i]
+        alpha = t[0]
+        beta = t[1]
+        a_tab = np.exp(np.linspace(np.log(alpha)-4*beta, np.log(alpha)+4*beta, 40))
+        I = Fisher_Simpson(np.array([alpha]), np.array([beta]), a_tab)
+        log_J[i] = 1/2 * np.log(I[0,0,0,0]*I[0,0,1,1] - I[0,0,1,0]**2)#/a.shape[0]
+    # else :
+    #     log_J = prior(theta)/a.shape[0]
+    vr = log_vrais(z,a,theta) #/a.shape[0]
+    return vr + log_J
 
 
 

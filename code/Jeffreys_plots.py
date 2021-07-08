@@ -26,11 +26,11 @@ theta_grid1, theta_grid2 = np.meshgrid(theta_tab[:,0], theta_tab[:,1])
 
 
 a_tab, h_a = np.linspace(10**-10, 2*A.max(), num=1000, retstep=True)
-J_t = fisher.Jeffreys_rectangles(theta_tab[:,0], theta_tab[:,1], a_tab, h_a)
+# J_t = fisher.Jeffreys_rectangles(theta_tab[:,0], theta_tab[:,1], a_tab, h_a)
 
 
 a_tab, h_a = np.linspace(10**-10, 2*A.max(), num=100, retstep=True)
-J_s = fisher.Jeffreys_simpson(theta_tab[:,0], theta_tab[:,1], a_tab)
+J_s = fisher.Jeffreys_simpson_numba(theta_tab[:,0], theta_tab[:,1], a_tab)
 
 
 
@@ -49,7 +49,7 @@ axes.set_zlabel('J_MC')
 plt.figure(2)
 plt.clf()
 axes = plt.axes(projection="3d")
-axes.plot_surface(theta_grid1, theta_grid2, J_t)
+# axes.plot_surface(theta_grid1, theta_grid2, J_t)
 
 plt.title('Jeffreys approx. rectangles')
 axes.set_xlabel('alpha')
@@ -86,17 +86,18 @@ plt.show()
 ##
 # test de méthode de simpson via numba
 
-a_tab, h_a = np.linspace(10**-10, 2*A.max(), num=30, retstep=True)
+a_tab, h_a = np.linspace(10**-10, 2*A.max(), num=50, retstep=True)
 
 import time
 atime = time.time()
-JJ = fisher.Fisher_Simpson_Numb(theta_tab[:,0], theta_tab[:,1], a_tab)
+JJ = fisher.Fisher_Simpson_Numb_paral(theta_tab[:,0], theta_tab[:,1], a_tab)
+# fisher.Fisher_rectangles(theta_tab[:,0], theta_tab[:,1], a_tab, h_a)
 btime = time.time()
 
 ##
 
 c= time.time()
-JJJ = fisher.Jeffreys_simpson(theta_tab[:,0], theta_tab[:,1], a_tab)
+JJJ = fisher.Jeffreys_simpson_numba(theta_tab[:,0], theta_tab[:,1], a_tab)
 d= time.time()
 
 
