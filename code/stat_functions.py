@@ -234,7 +234,7 @@ def log_post_jeff_notnumb(theta, z, a) :
 @jit(nopython=True, parallel=True, cache=True)
 def log_post_jeff_adapt(theta, z, a, Fisher) :
     I = Fisher(theta)
-    log_J = 1/2 * np.log(I[0,0,0,0]*I[0,0,1,1] - I[0,0,1,0]**2)
+    log_J = 1/2 * np.log(I[:,0,0]*I[:,1,1] - I[:,1,0]**2)
     vr = log_vrais(z,a,theta)
     return vr + log_J
 

@@ -5,6 +5,7 @@ from config import path, save_fisher_arr
 import fisher
 
 
+
 ## Calcul et sauvegarde d'un maillage fin de Jeffrey
 
 
@@ -36,14 +37,14 @@ def save_fisher() :
             # break
         # break
 
-    file = open(path+"Fisher_array", mode='wb')
+    file = open(path+r"/Fisher_array", mode='wb')
     pickle.dump(I, file)
     file.close()
 
-    return True
+    return I
 
 if __name__=="__main__":
-    save_fisher()
+    I = save_fisher()
 
 
 

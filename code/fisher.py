@@ -6,7 +6,7 @@ from scipy.integrate import simps as simpson, quadrature
 from utils import rep1, jrep1, simpson_numb, phi_numb
 from data import get_S_A
 from config import IM, path, C
-from extract_saved_fisher import fisher_approx, jeffrey_approx
+
 
 ## First funcs
 

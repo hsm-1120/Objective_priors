@@ -9,6 +9,7 @@ from data import get_S_A
 import reference_curves as ref
 import stat_functions
 from config import IM, C, path
+from extract_saved_fisher import fisher_approx, jeffrey_approx
 
 plt.ion()
 plt.show()
@@ -53,7 +54,7 @@ for k in range(kmax) :
 def func_log_post(z,a) :
     @jit(nopython=True)
     def log_post(theta) :
-        return stat_functions.log_post_jeff(theta,z,a)
+        return stat_functions.log_post_jeff_adapt(theta,z,a, Fisher=fisher_approx)
     return log_post
 
 import time
