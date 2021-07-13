@@ -516,3 +516,35 @@ axes.set_xlabel(r'$\alpha$')
 axes.set_ylabel(r'$\beta$')
 axes.set_zlabel('p')
 
+
+
+## Plot KL(posterior|Jeffreys) as a function of the number of observations
+
+# dim_k = 1000
+# range_k = np.arange(1000)*100 # len(S) = 10000
+#
+# #jit
+# def iterate_KL(range_k, dim_k) :
+#   KL = np.zeros(dim_k)
+#   for i,k in enumerate(range_k) :
+#     z = S[:k,0]
+#     a = A[:k,0]
+#     J = Jeffreys_func(A[:,0])
+#     theta_simul = HM_k(np.ones(2), J, 1000)
+#     post_const = np.mean(p_z_cond_a_theta_binary(z,a,theta_simul))
+#     KL[i] = Kullback_Leibler(posterior_func(z, a, post_const, J)/post_const, J)
+##
+
+S_tot, A_tot = get_S_A(path, IM, C, quantile=0, rate=100)
+init = A_tot.shape[0]
+desired = 50
+rate = desired/init*100
+
+S, A = get_S_A(path, IM, C, quantile=0, rate=rate, shuffle = False, relative=False)
+
+
+t0 = jrep0(np.array([3,0.3]),2000)
+a1 = time.time()
+h = stat_functions.log_post_jeff(t0, S,A)
+a2 = time.time()
+print(h, a2-a1)

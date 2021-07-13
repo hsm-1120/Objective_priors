@@ -14,21 +14,11 @@ plt.ion()
 plt.show()
 
 
-## Plot KL(posterior|Jeffreys) as a function of the number of observations
+#####
+## calcul d'un maillage de Jeffrey
 
-# dim_k = 1000
-# range_k = np.arange(1000)*100 # len(S) = 10000
-#
-# #jit
-# def iterate_KL(range_k, dim_k) :
-#   KL = np.zeros(dim_k)
-#   for i,k in enumerate(range_k) :
-#     z = S[:k,0]
-#     a = A[:k,0]
-#     J = Jeffreys_func(A[:,0])
-#     theta_simul = HM_k(np.ones(2), J, 1000)
-#     post_const = np.mean(p_z_cond_a_theta_binary(z,a,theta_simul))
-#     KL[i] = Kullback_Leibler(posterior_func(z, a, post_const, J)/post_const, J)
+
+
 
 
 
@@ -66,11 +56,12 @@ def func_log_post(z,a) :
         return stat_functions.log_post_jeff(theta,z,a)
     return log_post
 
-
+import time
 log_post = func_log_post(S_ref, A_ref)
 sig_prop = np.array([[0.25,0],[0,0.02]])
-th_post, accept = stat_functions.HM_k(t0, log_post, kmax, pi_log=True, max_iter=1000, sigma_prop=sig_prop)
-
+a1 = time.time()
+th_post, accept = stat_functions.HM_k(t0, log_post, kmax, pi_log=True, max_iter=2000, sigma_prop=sig_prop)
+a2 = time.time()
 
 plt.figure()
 plt.plot(th_MLE[:,0], th_MLE[:,1], 'x', label='MLE')
@@ -79,7 +70,7 @@ plt.title(r'Tirages de {} MLE / obs. a posteriori'.format(kmax))
 plt.legend()
 
 
-# comparaison avec MLE, MaxPost, Ref curve
+# tracé des quantiles de confiance comparaison avec Ref curve
 
 
 

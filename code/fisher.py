@@ -6,6 +6,7 @@ from scipy.integrate import simps as simpson, quadrature
 from utils import rep1, jrep1, simpson_numb, phi_numb
 from data import get_S_A
 from config import IM, path, C
+from extract_saved_fisher import fisher_approx, jeffrey_approx
 
 ## First funcs
 
@@ -64,14 +65,14 @@ def Fisher_MC(alpha_grid, beta_grid, A_simul):
             theta[1] = beta+0
             A_11, A_12, A_21, A_22, A_31, A_32 = 0.0,0.0,0.0,0.0,0.0,0.0
             for k,a in enumerate(A_s) :
-                gam = (np.log(a/theta[0])/theta[1])[0]
+                gam = (np.log(a/theta[0])/theta[1])
                 phi_prime2 = np.exp(-2*gam**2)/np.pi
                 phi_inv = (1/2+1/2*math.erf(gam) + (math.erf(gam)==-1))**(-1) * (math.erf(gam)!=-1)
                 phi_inv_op = (1/2-1/2*math.erf(gam) + (math.erf(gam)==1))**(-1) * (math.erf(gam)!=1)
-                A_11 += np.log(a/theta[0])[0]*phi_prime2 * phi_inv/A_num
-                A_12 += np.log(a/theta[0])[0]*phi_prime2 * phi_inv_op/A_num
-                A_21 += np.log(a/theta[0])[0]**2*phi_prime2 * phi_inv/A_num
-                A_22 += np.log(a/theta[0])[0]**2*phi_prime2 * phi_inv_op/A_num
+                A_11 += np.log(a/theta[0])*phi_prime2 * phi_inv/A_num
+                A_12 += np.log(a/theta[0])*phi_prime2 * phi_inv_op/A_num
+                A_21 += np.log(a/theta[0])**2*phi_prime2 * phi_inv/A_num
+                A_22 += np.log(a/theta[0])**2*phi_prime2 * phi_inv_op/A_num
                 A_31 += phi_prime2 * phi_inv/A_num
                 A_32 += phi_prime2 * phi_inv_op/A_num
             I[i,j,0,0] = 1/(theta[0]*theta[1])**2 * (A_31+A_32)
