@@ -1,14 +1,16 @@
-#import os
-#os.chdir(r"Z:/code")
+import os
+os.chdir(r"Z:/code")
 
 import numpy as np
 import pylab as plt
+import scipy.special as spc
 from numba import jit
 from scipy import optimize
 from data import get_S_A
 import reference_curves as ref
 import stat_functions
 from config import IM, C, path
+from utils import rep0, rep1
 from extract_saved_fisher import fisher_approx, jeffrey_approx
 
 plt.ion()
@@ -73,10 +75,22 @@ plt.legend()
 
 # tracé des quantiles de confiance comparaison avec Ref curve
 
+conf = 0.05
 
+curves_post = 1/2+1/2*spc.erf(np.log(rep0(ref.a_tab, kmax)/rep1(th_post[:,0], ref.num_a))/rep1(th_post[:,1], ref.num_a))
+curves_MLE = 1/2+1/2*spc.erf(np.log(rep0(ref.a_tab, kmax)/rep1(th_MLE[:,0], ref.num_a))/rep1(th_MLE[:,1], ref.num_a))
 
+q1_post, q2_post = np.quantile(curves_post, 1-conf/2, axis=0), np.quantile(curves_post, conf/2, axis=0)
+q1_MLE, q2_MLE = np.quantile(curves_MLE, 1-conf/2, axis=0), np.quantile(curves_MLE, conf/2, axis=0)
 
+curve_q1_post, curve_q2_post = np.zeros(ref.num_a), np.zeros(ref.num_a)
+curve_q1_MLE, curve_q2_MLE = np.zeros(ref.num_a), np.zeros(ref.num_a)
 
+for i in range(ref.num_a) :
+    curve_q1_post[i] = curves_post[q1_post[i]][i]
+    curve_q2_post[i] = curves_post[q2_post[i]][i]
+    curve_q1_MLE[i] = curves_MLE[q1_post[i]][i]
+    curve_q2_MLE[i] = curves_MLE[q2_post[i]][i]
 
 
 

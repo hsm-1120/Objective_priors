@@ -170,7 +170,7 @@ def log_vrais(z,a,theta) :
     l = theta.shape[0]
     n = a.shape[0]
     logp = np.zeros((l,n,1))
-    ind0 = np.zeros(l, dtype='int')
+    ind0 = np.zeros(l, dtype=np.int64)
     #for i,t in enumerate(theta) :
     for i in range(l) :
         if np.any(theta[i]<=0) :
