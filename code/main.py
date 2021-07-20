@@ -7,10 +7,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy.special as spc
 import scipy.stats as stat
+from scipy import optimize
 import math
 import pickle
 from numba import jit
-from scipy import optimize
 
 from data import get_S_A
 import reference_curves as ref
@@ -80,12 +80,12 @@ plt.plot(th_post[:,0], th_post[:,1], 'o', label='Post')
 plt.title(r'Tirages de {} MLE / obs. a posteriori'.format(kmax))
 plt.legend()
 
-file = open(path+r"/th_post", mode='wb')   # To save the results of the Metropolis-Hasting execution
-pickle.dump(th_post, file)
-file.close()
-file = open(path+r"/accept_ratio", mode='wb')
-pickle.dump(accept, file)
-file.close()
+# file = open(path+r"/th_post", mode='wb')   # To save the results of the Metropolis-Hasting execution
+# pickle.dump(th_post, file)
+# file.close()
+# file = open(path+r"/accept_ratio", mode='wb')
+# pickle.dump(accept, file)
+# file.close()
 #
 # file = open(path+r'/th_post', 'rb')   # To load the last results of the Metropolis-Hasting execution instead of executing it again
 # th_post = pickle.load(file)           # instead of executing it again
