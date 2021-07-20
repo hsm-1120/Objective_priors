@@ -124,11 +124,13 @@ plt.show()
 ## Posterior with Jeffrey prior
 
 # pp = np.zeros((num_theta,num_theta, A.shape[0],1))
+from extract_saved_fisher import fisher_approx
 pp = np.zeros((num_theta,num_theta))
 
 for i,alpha in enumerate(theta_tab[:,0]) :
     for j, beta in enumerate(theta_tab[:,1]) :
-        pp[i,j] = stat_functions.log_post_jeff(np.array([alpha,beta]).reshape(1,2),S,A)
+        # pp[i,j] = stat_functions.log_post_jeff(np.array([alpha,beta]).reshape(1,2),S,A)
+        pp[i,j] = stat_functions.log_post_jeff_adapt(np.array([alpha,beta]).reshape(1,2),S,A, fisher_approx)
 # pp = pp - pp.max()
 ppe = np.exp(pp)
 

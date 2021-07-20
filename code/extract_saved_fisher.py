@@ -20,7 +20,7 @@ bemax = save_fisher_arr.beta_max
 theta_tab1 = save_fisher_arr.alpha_tab
 theta_tab2 = save_fisher_arr.beta_tab
 
-@jit(nopython=True, parallel=True) #verify if parallel do not cause any error here
+@jit(nopython=True, parallel=True, cache=True) #verify if parallel do not cause any error here
 def fisher_approx(theta_array, cut=True) :
     l = theta_array.shape[0]
     Fis = np.zeros((l,2,2))
