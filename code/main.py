@@ -24,13 +24,13 @@ from extract_saved_fisher import fisher_approx, jeffrey_approx
 from distributions import log_gamma_normal_pdf
 
 
-from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-# for Palatino and other serif fonts use:
-#rc('font',**{'family':'serif','serif':['Palatino']})
-rc('text', usetex=True)
-plt.ion()
-plt.show()
+# from matplotlib import rc
+# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# # for Palatino and other serif fonts use:
+# #rc('font',**{'family':'serif','serif':['Palatino']})
+# rc('text', usetex=True)
+# plt.ion()
+# plt.show()
 
 
 
@@ -313,9 +313,12 @@ for nn, num in enumerate(num_est_tab) :
     #simulate kmax_conv th_post_jeffrey via HM
     log_post = func_log_post(S_tot[:num], A_tot[:num])
     sigma_prop = np.array([[0.1,0],[0,0.05]])
-    t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM, sigma0=sigma_prop)
-    th_post_jeff_tab[nn, :, 0] = t_tot[-keep_HM:, :, 0].flatten()
-    th_post_jeff_tab[nn, :, 1] = t_tot[-keep_HM:, :, 1].flatten()
+    # t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM, sigma0=sigma_prop)
+    t_fin, t_tot, acc = stat_functions.adaptative_HM(t0, log_post, pi_log=True, max_iter=5000, sigma0=sigma_prop)
+    # th_post_jeff_tab[nn, :, 0] = t_tot[-keep_HM:, :, 0].flatten()
+    # th_post_jeff_tab[nn, :, 1] = t_tot[-keep_HM:, :, 1].flatten()
+    th_post_jeff_tab[nn, :, 0] = t_tot[-1000:, 0].flatten()
+    th_post_jeff_tab[nn, :, 1] = t_tot[-1000:, 1].flatten()
     accept_jeff_tab[nn] = np.minimum(acc,1).mean(axis=1)
     th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
 
@@ -600,19 +603,60 @@ for ax in axes52[1,:] :
 
 
 
+## add cumulative expected value on fragility curves
+
+cl_colors = ['cyan', 'gold', 'lightgreen', 'salmon', 'violet', 'lightgrey', 'lightyellow']
+
+axes51bis = []
+
+for ax in axes51[1,1:] :
+    ax.set_frame_on(False)
+    (xmin, xmax) = ax.xaxis.get_view_interval()
+    (ymin, ymax) = ax.yaxis.get_view_interval()
+    ax.add_artist(plt.Line2D((xmin, xmin), (ymin, ymax),
+                                color = 'black', linewidth = 1.5))
+    ax.add_artist(plt.Line2D((xmin, xmax), (ymin, ymin),
+                                color = 'black', linewidth = 1.5))
+
+    box = ax.get_position()
+    axbis = fig.add_axes(np.concatenate((np.array([box.bounds[0], box.bounds[1]]), box.size)))
+    axbis.xaxis.set_label_position('top')
+    axbis.yaxis.set_label_position('right')
+
+    axbis.set_frame_on(False)
+    axbis.yaxis.tick_right()
+    axbis.xaxis.tick_top()
+    axbis.xaxis.set_tick_params(color = 'blue', labelcolor = 'blue')
+    axbis.yaxis.set_tick_params(color = 'blue', labelcolor = 'blue')
+
+    axbis.set_ylabel(r'$\mathbb{E}[\beta]$  $\mathbb{E}[\alpha]$', color='blue')
+    axbis.set_xlabel(r'iterations', color='blue')
+
+    axes51bis.append(axbis)
+
+    # ax22.set_title(r'estimation with posterior')
+
+
+num_kept_HM_fin = th_post_jeff_tot_tab[nn,:,0].shape[0]
+for i,nn in enumerate(tab_nn) :
+    num = num_est_tab[nn]
+
+    axes51bis[0].plot(th_post_jeff_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i])
+    axes51bis[1].plot(th_post_gam_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i])
+
+
+    (ymin, ymax) = ax.yaxis.get_view_interval()
+    axbis.set_ylim(ymin,ymax)
+    (xmin, xmax) = axbis.xaxis.get_view_interval()
+    (ymin, ymax) = axbis.yaxis.get_view_interval()
+    axbis.add_artist(plt.Line2D((xmax, xmax), (ymin, ymax),
+                              color = 'blue', linewidth = 1.5))
+    axbis.add_artist(plt.Line2D((xmin, xmax), (ymax, ymax),
+                              color = 'blue', linewidth = 1.5))
 
 
 
-
-
-
-
-
-
-
-
-
-
+    axbis.legend()
 
 
 
