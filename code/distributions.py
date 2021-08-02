@@ -23,6 +23,21 @@ def log_norm_density(x, mu, sigma) : #compatibility with multivariate while ther
     return 1/x * np.exp(-np.sum((np.log(x)-mu)**2, axis=0)/2/sigma**2)
 
 
+@jit(nopython=True, cache=True)
+def gamma_normal_density(mu, tau, m, a, b, lamb) :
+
+    return tau**(a-1/2) * np.exp(-b*tau) * np.exp(-lamb*tau*(mu-m)**2/2)
+
+@jit(nopython=True, cache=True)
+def log_gamma_normal_pdf(mu, tau, m, a, b, lamb) :
+    l = mu.shape[0]
+    tab = np.zeros(l)
+    for i in range(l):
+        if np.isnan(mu[i]) or tau[i]<=0 :
+            tab[i] = -10**5
+        else :
+            tab[i] = np.log(gamma_normal_density(mu[i], tau[i], m, a, b, lamb))
+    return tab
 
 #conditionnal usage for HM
 

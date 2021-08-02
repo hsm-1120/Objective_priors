@@ -74,6 +74,11 @@ def phi_numb(alpha_grid, beta_grid, a_tab) :
 
 
 
+## Curve comparison
+
+
+
+
 
 
 

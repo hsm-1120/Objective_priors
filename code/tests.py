@@ -15,6 +15,8 @@ import stat_functions
 from utils import jrep1, jrep0
 from scipy import optimize
 from scipy.special import erf
+# from distributions import gamma_normal_density
+import distributions
 
 
 plt.ion()
@@ -548,3 +550,48 @@ a1 = time.time()
 h = stat_functions.log_post_jeff(t0, S,A)
 a2 = time.time()
 print(h, a2-a1)
+
+
+
+####
+
+m = 0
+a = 0.01
+b = 0.01
+lamb = 0.01
+
+pp = np.zeros((num_theta,num_theta))
+
+for i,alpha in enumerate(theta_tab[:,0]) :
+    for j, beta in enumerate(theta_tab[:,1]) :
+        # pp[i,j] = stat_functions.p_z_cond_a_theta_binary(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A,np.array([alpha,beta]).reshape(1,2))
+        # pp[i,j] = stat_functions.log_vrais(S,A, np.array([[alpha, beta]])) + np.log(distributions.gamma_normal_density(np.log(alpha), beta, m, a, b, lamb))
+        pp[i,j] = np.log(distributions.gamma_normal_density(np.log(alpha), beta, m, a, b, lamb))
+        # pp[i,j] = stat_functions.posterior(np.array([alpha,beta]).reshape(1,2),S,A,exponantial_prior)
+        # pp[i,j] = exponantial_prior(np.array([alpha,beta]).reshape(1,2))
+        #pp[i,j] = p_t(S,A,np.array([alpha,beta]).reshape(1,2)).flatten()
+# pp = pp-pp.max()
+
+
+plt.figure()
+axes = plt.axes(projection="3d")
+
+axes.plot_surface(theta_grid1, theta_grid2, np.exp(pp).T)
+
+plt.title(r'log post, num data = {}'.format(A.shape[0]))
+axes.set_xlabel(r'$\alpha$')
+axes.set_ylabel(r'$\beta$')
+axes.set_zlabel('p')
+
+
+
+
+
+
+
+
+
+
+
+

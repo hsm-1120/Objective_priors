@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.random as rd
 import math
+from numpy.linalg import cholesky
 from numba import jit, prange
 from utils import simpson_numb, jrep0, jrep1
 from fisher import Jeffreys_rectangles, Jeffreys_simpson, Jeffreys_simpson_numba, Fisher_Simpson, Fisher_Simpson_Numb
@@ -23,6 +24,7 @@ def HM_gauss(z0, pi, max_iter=5000, sigma_prop=10**-2*np.eye(2)) :
 def HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma_prop=10**-2) :
     d = z0.shape[0]
     z_v = jrep0(z0, k)
+    z_tot = np.zeros((max_iter,k,2))
     u = len(np.asarray(sigma_prop).shape)
     alpha_tab = np.zeros((max_iter,k))
     if u==0 :
@@ -50,7 +52,56 @@ def HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma_prop=10**-2) :
         #log_alpha = np.log(pi_z_vi)-np.log(pi_zi)
         #rand = np.log(rd.rand())<log_alpha
         z_v += jrep1(rand, d)*(z-z_v)
-    return z_v, alpha_tab
+        z_tot[n] = z_v + 0
+    return z_v, z_tot, alpha_tab
+
+
+@jit(nopython=True)
+def adaptative_HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05) :
+    d = z0.shape[0]
+    z_v = jrep0(z0, k)
+    z_tot = np.zeros((max_iter,k,2))
+    # u = len(np.asarray(sigma0).shape)
+    alpha_tab = np.zeros((max_iter,k))
+    step = 40*d
+    # if u==0 :
+    # sig = sigma0*np.eye(d)
+    # else :
+    sig = sigma0+0
+    sig_emp = sig+0
+    for n in range(max_iter) :
+        pi_zv = pi(z_v)
+        z = np.zeros_like(z_v)
+        # for i,z_vi in enumerate(z_v) :
+        if n>=step :
+            for i in prange(k) :
+                z[i] = z_v[i] + (1-b)*2.38*sig_emp@rd.randn(d)/np.sqrt(d) + b* sig@rd.randn(d)/np.sqrt(d)
+                # z[i] = np.asarray(z_vi) + sig@rd.randn(d)
+        else :
+            for i in prange(k) :
+                z[i] = z_v[i] + sig@rd.randn(d)/np.sqrt(d)
+        pi_z = pi(z)
+        if pi_log :
+            log_alpha = pi_z - pi_zv
+        else :
+            log_alpha = np.log(pi_z)-np.log(pi_zv)
+        rand = np.log(rd.rand(k))<log_alpha
+        alpha_tab[n] = np.exp(log_alpha)
+        # alpha = pi_z / pi_zv
+        # rand = rd.rand(k)<alpha
+        #pi_z_vi = pi(z_vi)
+        #pi_zi = pi(zi)
+        #log_alpha = np.log(pi_z_vi)-np.log(pi_zi)
+        #rand = np.log(rd.rand())<log_alpha
+        z_v += jrep1(rand, d)*(z-z_v)
+        z_tot[n] = z_v + 0
+        # tocov = np.expand_dims(z_tot[:n+1,:,0].flatten(), axis=0)
+        # be = np.expand_dims(z_tot[:n+1,:,1].flatten(), axis=0)
+        tocov = np.stack((z_tot[:n+1,:,0].flatten(), z_tot[:n+1,:,1].flatten()), axis=0)
+        sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
+        # if sig_emp.shape!=(2,2) :
+        #     return sig_emp, z_tot, alpha_tab
+    return z_v, z_tot, alpha_tab
 
 
 
@@ -237,6 +288,23 @@ def log_post_jeff_adapt(theta, z, a, Fisher) :
     log_J = 1/2 * np.log(I[:,0,0]*I[:,1,1] - I[:,1,0]**2)
     vr = log_vrais(z,a,theta)
     return vr + log_J
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
