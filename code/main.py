@@ -279,11 +279,15 @@ num_est_min = 1
 number_estimations = num_est_max - num_est_min
 num_est_tab = np.arange(num_est_min, num_est_max)
 # kmax_conv = int(num_tot/num_est_max)+1
-kmax_conv = 1000
+#kmax_conv = 1000
+kmax_conv=5000
 
-iter_HM = 5000
-keep_HM = 100
-num_sim_HM = int(kmax_conv/keep_HM)
+#iter_HM = 5000
+iter_HM = 20000
+#keep_HM = 100
+keep_HM = 5000
+#num_sim_HM = int(kmax_conv/keep_HM)
+num_sim_HM = 1
 # assert keep_HM*num_sim_HM = kmax_conv
 
 th_MLE_tab = np.zeros((number_estimations, kmax_conv, 2))
