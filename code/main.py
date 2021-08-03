@@ -312,7 +312,7 @@ for nn, num in enumerate(num_est_tab) :
     th_MLE_tab[nn,:] = t0+0
     #simulate kmax_conv th_post_jeffrey via HM
     log_post = func_log_post(S_tot[:num], A_tot[:num])
-    sigma_prop = np.array([[0.1,0],[0,0.05]])
+    sigma_prop = np.array([[0.1,0],[0,0.095]])
     # t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM, sigma0=sigma_prop)
     t_fin, t_tot, acc = stat_functions.adaptative_HM(t0, log_post, pi_log=True, max_iter=20000, sigma0=sigma_prop)
     # th_post_jeff_tab[nn, :, 0] = t_tot[-keep_HM:, :, 0].flatten()
