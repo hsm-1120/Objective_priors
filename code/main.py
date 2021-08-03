@@ -314,11 +314,11 @@ for nn, num in enumerate(num_est_tab) :
     log_post = func_log_post(S_tot[:num], A_tot[:num])
     sigma_prop = np.array([[0.1,0],[0,0.05]])
     # t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM, sigma0=sigma_prop)
-    t_fin, t_tot, acc = stat_functions.adaptative_HM(t0, log_post, pi_log=True, max_iter=5000, sigma0=sigma_prop)
+    t_fin, t_tot, acc = stat_functions.adaptative_HM(t0, log_post, pi_log=True, max_iter=20000, sigma0=sigma_prop)
     # th_post_jeff_tab[nn, :, 0] = t_tot[-keep_HM:, :, 0].flatten()
     # th_post_jeff_tab[nn, :, 1] = t_tot[-keep_HM:, :, 1].flatten()
-    th_post_jeff_tab[nn, :, 0] = t_tot[-1000:, 0].flatten()
-    th_post_jeff_tab[nn, :, 1] = t_tot[-1000:, 1].flatten()
+    th_post_jeff_tab[nn, :, 0] = t_tot[-5000:, 0].flatten()
+    th_post_jeff_tab[nn, :, 1] = t_tot[-5000:, 1].flatten()
     # accept_jeff_tab[nn] = np.minimum(acc,1).mean(axis=1)
     accept_jeff_tab[nn] = np.minimum(acc,1)
     # th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
@@ -485,8 +485,8 @@ for i,nn in enumerate(tab_nn) :
     axes52[1,0].hist(th_post_jeff_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/num_plots, rwidth=1/num_plots, label=r'{}'.format(num), color=colors[i], density=True)
     axes52[1,1].hist(th_post_gam_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/num_plots, rwidth=1/num_plots, label=r'{}'.format(num), color=colors[i], density=True)
 
-    axes53[0].plot(accept_jeff_tab[nn], color=colors[i], label=r'{}'.format(num), linewidth=0.5, alpha=1)
-    axes53[1].plot(accept_gam_tab[nn], color=colors[i], label=r'{}'.format(num), linewidth=0.5, alpha=1)
+    axes53[0].plot(accept_jeff_tab[nn].cumsum()/np.arange(1,20000)[10*np.range(2000)], color=colors[i], label=r'{}'.format(num), linewidth=0.5, alpha=1)
+    #axes53[1].plot(accept_gam_tab[nn], color=colors[i], label=r'{}'.format(num), linewidth=0.5, alpha=1)
 
     axes54[0,0].plot(th_post_jeff_tot_tab[nn,:,0], color=colors[i], label=r'{}'.format(num), linewidth=1, alpha=0.7)
     axes54[0,1].plot(th_post_gam_tot_tab[nn,:,0], color=colors[i], label=r'{}'.format(num), linewidth=1, alpha=0.7)
