@@ -319,9 +319,11 @@ for nn, num in enumerate(num_est_tab) :
     # th_post_jeff_tab[nn, :, 1] = t_tot[-keep_HM:, :, 1].flatten()
     th_post_jeff_tab[nn, :, 0] = t_tot[-1000:, 0].flatten()
     th_post_jeff_tab[nn, :, 1] = t_tot[-1000:, 1].flatten()
-    accept_jeff_tab[nn] = np.minimum(acc,1).mean(axis=1)
-    th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
-
+    # accept_jeff_tab[nn] = np.minimum(acc,1).mean(axis=1)
+    accept_jeff_tab[nn] = np.minimum(acc,1)
+    # th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
+    th_post_jeff_tot_tab[nn] = t_tot[:]+0
+    
     #simulate kmax_conv th_post_gamma via HM
     log_post = func_log_post_gamma(S_tot[:num], A_tot[:num])
     # sigma_prop =
