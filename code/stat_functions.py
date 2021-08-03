@@ -147,7 +147,7 @@ def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0
         z_tot[n] = z_v[0] + 0
         # tocov = np.expand_dims(z_tot[:n+1,:,0].flatten(), axis=0)
         # be = np.expand_dims(z_tot[:n+1,:,1].flatten(), axis=0)
-        tocov = np.stack((z_tot[:n+1,:,0].flatten(), z_tot[:n+1,:,1].flatten()), axis=0)
+        tocov = np.stack((z_tot[:n+1,0], z_tot[:n+1,1]), axis=0)
         sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
         # if sig_emp.shape!=(2,2) :
         #     return sig_emp, z_tot, alpha_tab
