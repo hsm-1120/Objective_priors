@@ -103,7 +103,7 @@ def adaptative_HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2)
         #     return sig_emp, z_tot, alpha_tab
     return z_v, z_tot, alpha_tab
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True)
 def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05) :
     d = z0.shape[0]
     z_v = z0.reshape(1,2)
