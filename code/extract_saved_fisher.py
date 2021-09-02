@@ -82,13 +82,24 @@ if __name__=="__main__":
     axes = plt.axes(projection="3d")
     axes.plot_surface(theta_grid1, theta_grid2, JJ.T)
 
-    plt.title('Jeffreys maillage fin')
+    plt.title('Jeffreys prior')
     axes.set_xlabel('alpha')
     axes.set_ylabel('beta')
     axes.set_zlabel('J')
 
 
+    j_min, j_max = 0, np.max(JJ)
+    levels = np.linspace(j_min, j_max, 15)
 
+    plt.figure(figsize=(4.5, 3))
+    plt.contourf(theta_grid1, theta_grid2, JJ.T, cmap='viridis', levels=levels)
+    plt.title(r'Jeffreys prior')
+    plt.axis([theta_grid1.min(), theta_grid1.max(), theta_grid2.min(), theta_grid2.max()])
+    plt.colorbar()
+    plt.xlabel(r"$\alpha$")
+    plt.ylabel(r"$\beta$")
+    plt.tight_layout()
+    plt.show()
 
 
 

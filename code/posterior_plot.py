@@ -17,10 +17,10 @@ S_sq, A_sq = get_S_A(path, IM, C)
 S_tot, A_tot = get_S_A(path, IM, C, quantile=0, rate=100)
 
 init = A_tot.shape[0]
-desired = 500
+desired = 150
 rate = desired/init*100
 
-S, A = get_S_A(path, IM, C, quantile=0, rate=rate)
+S, A = get_S_A(path, IM, C, quantile=0, rate=rate, relative=False, shuffle=False)
 
 ##
 
@@ -132,7 +132,7 @@ for i,alpha in enumerate(theta_tab[:,0]) :
         # pp[i,j] = stat_functions.log_post_jeff(np.array([alpha,beta]).reshape(1,2),S,A)
         pp[i,j] = stat_functions.log_post_jeff_adapt(np.array([alpha,beta]).reshape(1,2),S,A, fisher_approx)
 # pp = pp - pp.max()
-ppe = np.exp(pp)
+ppe = np.exp(pp+25)
 
 
 
@@ -143,7 +143,7 @@ axes = plt.axes(projection="3d")
 
 axes.plot_surface(theta_grid1, theta_grid2, pp.T)
 
-plt.title(r'log-posterior with Jeff prior, num data = {}'.format(A.shape[0]))
+plt.title(r'log-posterior with Jeff prior, num data={}'.format(A.shape[0]))
 axes.set_xlabel(r'$\alpha$')
 axes.set_ylabel(r'$\beta$')
 axes.set_zlabel('p')
@@ -151,9 +151,9 @@ axes.set_zlabel('p')
 j_min, j_max = 0, np.max(ppe)
 levels = np.linspace(j_min, j_max, 15)
 
-plt.figure(figsize=(4.5, 2.5))
+plt.figure(figsize=(4.5, 3))
 plt.contourf(theta_grid1, theta_grid2, ppe.T, cmap='viridis', levels=levels)
-plt.title(r'posterior with Jeff prior, num data = {}'.format(A.shape[0]))
+plt.title(r'post with Jeff prior, n_data={}'.format(A.shape[0]))
 plt.axis([theta_grid1.min(), theta_grid1.max(), theta_grid2.min(), theta_grid2.max()])
 plt.colorbar()
 plt.xlabel(r"$\alpha$")

@@ -104,13 +104,12 @@ def adaptative_HM_k(z0, pi, k, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2)
     return z_v, z_tot, alpha_tab
 
 @jit(nopython=True)
-def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05) :
+def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05, step=500) :
     d = z0.shape[0]
     z_v = z0.reshape(1,2)
     z_tot = np.zeros((max_iter,2))
     # u = len(np.asarray(sigma0).shape)
     alpha_tab = np.zeros((max_iter,1))
-    step = 40*d
     # if u==0 :
     # sig = sigma0*np.eye(d)
     # else :
@@ -119,40 +118,59 @@ def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0
     for n in range(max_iter) :
         pi_zv = pi(z_v)
         z = np.zeros_like(z_v)
-        # for i,z_vi in enumerate(z_v) :
         if n>=step :
-            # for i in prange(k) :
-                # z[i] = z_v[i] + (1-b)*2.38*sig_emp@rd.randn(d)/np.sqrt(d) + b* sig@rd.randn(d)/np.sqrt(d)
-                # z[i] = np.asarray(z_vi) + sig@rd.randn(d)
             z[0] = z_v[0] + (1-b)*2.38*sig_emp@rd.randn(d)/np.sqrt(d) + b* sig@rd.randn(d)/np.sqrt(d)
         else :
-            # for i in prange(k) :
-                # z[i] = z_v[i] + sig@rd.randn(d)/np.sqrt(d)
             z[0] = z_v[0] + sig@rd.randn(d)/np.sqrt(d)
         pi_z = pi(z)
         if pi_log :
             log_alpha = pi_z - pi_zv
         else :
             log_alpha = np.log(pi_z)-np.log(pi_zv)
-        # rand = np.log(rd.rand(k))<log_alpha
         rand = np.log(rd.rand())<log_alpha
         alpha_tab[n] = np.exp(log_alpha)
-        # alpha = pi_z / pi_zv
-        # rand = rd.rand(k)<alpha
-        #pi_z_vi = pi(z_vi)
-        #pi_zi = pi(zi)
-        #log_alpha = np.log(pi_z_vi)-np.log(pi_zi)
-        #rand = np.log(rd.rand())<log_alpha
         z_v += rand*(z-z_v)
         z_tot[n] = z_v[0] + 0
-        # tocov = np.expand_dims(z_tot[:n+1,:,0].flatten(), axis=0)
-        # be = np.expand_dims(z_tot[:n+1,:,1].flatten(), axis=0)
-        # tocov = np.stack((z_tot[:n+1,0], z_tot[:n+1,1]), axis=0)
-        tocov = np.transpose(z_tot[:n+1])
-        sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
-        # if sig_emp.shape!=(2,2) :
-        #     return sig_emp, z_tot, alpha_tab
+        if n>=step :
+            tocov = np.transpose(z_tot[:n+1])
+            sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
     return z_v, z_tot, alpha_tab[:,0]
+
+
+@jit(nopython=True)
+def adaptative_HM_1d(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1, b=0.05, step=500) :
+    # d = z0.shape[0]
+    z_v = np.zeros(1)
+    z_v = z0+0
+    z_tot = np.zeros((max_iter,1))
+    # u = len(np.asarray(sigma0).shape)
+    alpha_tab = np.zeros((max_iter,1))
+    # if u==0 :
+    # sig = sigma0*np.eye(d)
+    # else :
+    sig = sigma0+0
+    sig_emp = sig+0
+    for n in range(max_iter) :
+        pi_zv = pi(z_v)
+        z = np.zeros(1)
+        if n>=step :
+            z = z_v + (1-b)*2.38*sig_emp*rd.randn() + b* sig*rd.randn()
+        else :
+            z = z_v + sig*rd.randn()
+        pi_z = pi(z)
+        if pi_log :
+            log_alpha = pi_z - pi_zv
+        else :
+            log_alpha = np.log(pi_z)-np.log(pi_zv)
+        rand = np.log(rd.rand())<log_alpha
+        alpha_tab[n] = np.exp(log_alpha)
+        z_v += rand*(z-z_v)
+        z_tot[n] = z_v + 0
+        if n>=step :
+            # tocov = np.transpose(z_tot[:n+1])
+            # sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
+            sig_emp = np.sqrt(z_tot[:n+1].var())
+    return z_v, z_tot[:,0], alpha_tab[:,0]
 
 
 

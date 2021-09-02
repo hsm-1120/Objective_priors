@@ -24,13 +24,13 @@ from extract_saved_fisher import fisher_approx, jeffrey_approx
 from distributions import log_gamma_normal_pdf
 
 
-# from matplotlib import rc
-# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-# # for Palatino and other serif fonts use:
-# #rc('font',**{'family':'serif','serif':['Palatino']})
-# rc('text', usetex=True)
-# plt.ion()
-# plt.show()
+from matplotlib import rc
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# for Palatino and other serif fonts use:
+#rc('font',**{'family':'serif','serif':['Palatino']})
+rc('text', usetex=True)
+plt.ion()
+plt.show()
 
 
 
@@ -327,7 +327,7 @@ for nn, num in enumerate(num_est_tab) :
     accept_jeff_tab[nn] = np.minimum(acc,1)
     # th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
     th_post_jeff_tot_tab[nn] = t_tot[:]+0
-    
+
     #simulate kmax_conv th_post_gamma via HM
     log_post = func_log_post_gamma(S_tot[:num], A_tot[:num])
     # sigma_prop =
