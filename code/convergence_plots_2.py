@@ -33,9 +33,9 @@ sigma_prop = np.sqrt(0.4*np.array([[0.5,0],[0,0.2]]))
 
 num_est_max = 200
 num_est_min = 10
-number_estimations = 19
+number_estimations = 10
 # num_est_tab = np.arange(num_est_min, num_est_max)
-num_est_tab = 10*np.arange(1,20)
+num_est_tab = 20*np.arange(1,11)
 
 iter_HM = 20000
 keep_HM_each = 500
@@ -145,31 +145,53 @@ gam_a = 0.01
 gam_b = 0.01
 gam_m = 0
 
-def func_log_post_gamma(z,a, gam_a=gam_a, gam_b=gam_b, gam_m=gam_m, gam_lamb=gam_lamb) :
+# def func_log_post_gamma(z,a, gam_a=gam_a, gam_b=gam_b, gam_m=gam_m, gam_lamb=gam_lamb) :
+#     @jit(nopython=True)
+#     def log_post(theta) :
+#         log_vrs = stat_functions.log_vrais(z, a, theta)
+#         log_prior = log_gamma_normal_pdf(np.log(theta[:,0]), theta[:,1], gam_m, gam_a, gam_b, gam_lamb)
+#         return log_prior + log_vrs
+#     return log_post
+
+def func_log_post_gamma(num, gam_a=gam_a, gam_b=gam_b, gam_m=gam_m, gam_lamb=gam_lamb) :
+    ids = np.arange(num_tot)
+    rd.shuffle(ids)
+    z, a = S_tot[ids], A_tot[ids]
     @jit(nopython=True)
     def log_post(theta) :
-        log_vrs = stat_functions.log_vrais(z, a, theta)
-        log_prior = log_gamma_normal_pdf(np.log(theta[:,0]), theta[:,1], gam_m, gam_a, gam_b, gam_lamb)
-        return log_prior + log_vrs
+        s = theta.shape[0]
+        pp = np.zeros((s,1))
+        for i in range(s) :
+            th = np.zeros((1,2))
+            th[0] = theta[i] +0
+            log_vrs = stat_functions.log_vrais(z, a, th)
+            pp[i] = log_gamma_normal_pdf(np.log(th[:,0]), th[:,1], gam_m, gam_a, gam_b, gam_lamb) + log_vrs
+        return pp[:,0]
     return log_post
 
 
-print('Starting Gamma post')
+
+print('starting gamm post')
 
 for nn, num in enumerate(num_est_tab) :
-    #todo : copy paste above to sectgion bellow
-    #simulate kmax_conv th_post_gamma via HM
-    log_post = func_log_post_gamma(S_tot[:num], A_tot[:num])
-    # sigma_prop =
-    t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM)
-    th_post_gam_tab[nn, :, 0] = t_tot[-keep_HM:, :, 0].flatten()
-    th_post_gam_tab[nn, :, 1] = t_tot[-keep_HM:, :, 1].flatten()
+
+
+    #simulate kmax_conv th_post_jeffrey via HM
+    # log_post = func_log_post(num) #todo : change it to bootstrap
+    log_post = func_log_post_gamma(num)
+    sigma_prop = np.array([[0.1,0],[0,0.095]])
+    # t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, num_sim_HM, pi_log=True, max_iter=iter_HM, sigma0=sigma_prop)
+    t_fin, t_tot, acc = stat_functions.adaptative_HM_k(t0, log_post, nb_diff_tirages, pi_log=True, max_iter=iter_HM) #attention: de base HM_k c'est pas ca mais ca revient surement au meme: a voir
+    th_post_gam_tab[nn, :, 0] = t_tot[-keep_HM_each:,:, 0].flatten()
+    th_post_gam_tab[nn, :, 1] = t_tot[-keep_HM_each:,:, 1].flatten()
+    # accept_jeff_tab[nn] = np.minimum(acc,1).mean(axis=1)
     accept_gam_tab[nn] = np.minimum(acc,1).mean(axis=1)
-    th_post_gam_tot_tab[nn] = t_tot[:,0]+0
+    # th_post_jeff_tot_tab[nn] = t_tot[:,0]+0
+    th_post_gam_tot_tab[nn,:,:,0] = t_tot[:,:,0]
+    th_post_gam_tot_tab[nn,:,:,1] = t_tot[:,:,1]
 
-    if nn%10==0 :
-        print(r'{}/{}'.format(nn, number_estimations))
-
+    # if nn%10==0 :
+    print(r'{}/{}'.format(nn, number_estimations))
 
 
 
