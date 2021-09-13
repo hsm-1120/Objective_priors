@@ -116,43 +116,53 @@ for nn, num in enumerate(tab_nn) :
     # calculate kmax th_MLE via bootstrap:
     # CHANGE: REEL BOOTSTRAP
     # 1. Create A density conditionnaly
-    sig1 = A_tot[:num][(S_tot[:num]==1)].var()**0.5
-    h1 = sig1*(S_tot[:num]==1).sum()**(-1/5)
-    sig2 = A_tot[:num][(S_tot[:num]==0)].var()**0.5
-    h2 = sig2*(S_tot[:num]==0).sum()**(-1/5)
-    @jit
-    def f_A_cond_1(at) :
-        # if np.all(at<=0) :
-        #     return np.array([10**-15])
-        # else :
-        return np.array(np.exp(-((A_tot[:num][(S_tot[:num]==1)]-at)/h1)**2 ).mean()/h1/np.sqrt(np.pi)) * (at>0) + 10**-15*(at<=0)
-    @jit
-    def f_A_cond_2(at) :
-        # if np.all(at<=0) :
-        #     return np.array([10**-15])
-        return np.array(np.exp(-((A_tot[:num][(S_tot[:num]==0)]-at)/h1)**2 ).mean()/h2/np.sqrt(np.pi)) * (at>0) + 10**-15*(at<=0)
-    nb1 = (rd.rand(100,num)<((S_tot[:num]==1).mean())).sum()
-    nb2 = num*100-nb1
-    atinit1 = A_tot[:num][(S_tot[:num]==1)].mean()
-    at_fin1, at_tot1, at_acc1 =  stat_functions.adaptative_HM_1d(np.array([atinit1]), f_A_cond_1, pi_log=False, max_iter=40000)
-    A1 = at_tot1[-nb1:]
-    atinit2 = A_tot[:num][(S_tot[:num]==0)].mean()
-    at_fin2, at_tot2, at_acc2 =  stat_functions.adaptative_HM_1d(np.array([atinit2]), f_A_cond_2, pi_log=False, max_iter=40000)
-    A2 = at_tot2[-nb2:]
-    A = np.concatenate((A1,A2))
-    S = np.ones(num*100)
-    S[-nb2:] = 0
-    id_sh = np.arange(num*100)
-    rd.shuffle(id_sh)
-    A = A[id_sh] +0
-    S = S[id_sh] +0
+    # sig1 = A_tot[:num][(S_tot[:num]==1)].var()**0.5
+    # h1 = sig1*(S_tot[:num]==1).sum()**(-1/5)
+    # sig2 = A_tot[:num][(S_tot[:num]==0)].var()**0.5
+    # h2 = sig2*(S_tot[:num]==0).sum()**(-1/5)
+    # @jit
+    # def f_A_cond_1(at) :
+    #     # if np.all(at<=0) :
+    #     #     return np.array([10**-15])
+    #     # else :
+    #     return np.array(np.exp(-((A_tot[:num][(S_tot[:num]==1)]-at)/h1)**2 ).mean()/h1/np.sqrt(np.pi)) * (at>0) + 10**-15*(at<=0)
+    # @jit
+    # def f_A_cond_2(at) :
+    #     # if np.all(at<=0) :
+    #     #     return np.array([10**-15])
+    #     return np.array(np.exp(-((A_tot[:num][(S_tot[:num]==0)]-at)/h1)**2 ).mean()/h2/np.sqrt(np.pi)) * (at>0) + 10**-15*(at<=0)
+    # nb1 = (rd.rand(100,num)<((S_tot[:num]==1).mean())).sum()
+    # nb2 = num*100-nb1
+    # atinit1 = A_tot[:num][(S_tot[:num]==1)].mean()
+    # at_fin1, at_tot1, at_acc1 =  stat_functions.adaptative_HM_1d(np.array([atinit1]), f_A_cond_1, pi_log=False, max_iter=40000)
+    # A1 = at_tot1[-nb1:]
+    # atinit2 = A_tot[:num][(S_tot[:num]==0)].mean()
+    # at_fin2, at_tot2, at_acc2 =  stat_functions.adaptative_HM_1d(np.array([atinit2]), f_A_cond_2, pi_log=False, max_iter=40000)
+    # A2 = at_tot2[-nb2:]
+    # A = np.concatenate((A1,A2))
+    # S = np.ones(num*100)
+    # S[-nb2:] = 0
+    # id_sh = np.arange(num*100)
+    # rd.shuffle(id_sh)
+    # A = A[id_sh] +0
+    # S = S[id_sh] +0
+    #
+    # for k in range(k_maxMLE) :
+    #     i = rd.randint(0, num*99)
+    #     Stmp = S[i:i+num]+0
+    #     Atmp = A[i:i+num]+0
+    #     log_vr = func_log_vr(Stmp,Atmp)
+    #     th_MLE_tab[nn, k] = optimize.minimize(log_vr, t0, bounds=[(0.01,100),(0.01,100)], options={'maxiter':10, 'disp':False}).x
 
-    for k in range(k_maxMLE) :
-        i = rd.randint(0, num*99)
-        Stmp = S[i:i+num]+0
-        Atmp = A[i:i+num]+0
-        log_vr = func_log_vr(Stmp,Atmp)
+    for k in range(k_maxMLE) : #this is real bootstrap
+        ids = rd.choice(np.arange(num), size=num)
+        # A = rd.choice(A_tot[:num], size=num)
+        # S = rd.choice(S_tot[:num], size=num)
+        A = A_tot[:num][ids] +0
+        S = S_tot[:num][ids] +0
+        log_vr = func_log_vr(S,A)
         th_MLE_tab[nn, k] = optimize.minimize(log_vr, t0, bounds=[(0.01,100),(0.01,100)], options={'maxiter':10, 'disp':False}).x
+
 
     #simulate kmax th_post_jeffrey via HM
     log_post = func_log_post(S_tot[:num], A_tot[:num])
