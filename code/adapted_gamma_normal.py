@@ -48,7 +48,8 @@ plt.plot(np.maximum(acc,1).cumsum()/np.arange(1,nnn+1))
 ## 2. Calculer les coeffs d'un g-n associé
 
 
-mu = np.sum(th[:,1]**(1/2)*np.log(th[:,0])) / np.sum(np.log(th[:,0]))
+# mu = np.sum(th[:,1]**(1/2)*np.log(th[:,0])) / np.sum(np.log(th[:,0]))
+mu = np.sum(th[:,1]**(1/2)*np.log(th[:,0])) / np.sum(th[:,1]**(1/2))
 lamb = n/(np.sum(th[:,1]**(1/2)*(np.log(th[:,0])-mu)**2))
 
 # pour a:
@@ -115,6 +116,11 @@ plt.ylabel(r"$\beta$")
 plt.tight_layout()
 plt.show()
 
+
+### tirage du posterior:
+
+
+N = 50
 
 
 
