@@ -1,7 +1,12 @@
+import os
+import inspect
+
+directory = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+os.chdir(directory)
 
 import numpy as np
 import pickle
-from config import path, save_fisher_arr
+from config import path, save_fisher_arr, IM
 import fisher
 
 
@@ -37,7 +42,7 @@ def save_fisher() :
             # break
         # break
 
-    file = open(path+r"/Fisher_array", mode='wb')
+    file = open(path+r"/Fisher_array_"+IM, mode='wb')
     pickle.dump(I, file)
     file.close()
 

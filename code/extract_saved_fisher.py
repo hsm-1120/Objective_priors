@@ -3,11 +3,11 @@ import pickle
 from numba import jit, prange
 import numpy as np
 import pylab as plt
-from config import path, save_fisher_arr
+from config import path, save_fisher_arr, IM
 
 ##
 
-file = open(path+r'/Fisher_array', 'rb')
+file = open(path+r'/Fisher_array_'+IM, 'rb')
 I = pickle.load(file)
 file.close()
 

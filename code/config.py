@@ -9,7 +9,8 @@ os.chdir(directory)
 import numpy as np
 
 path = r'../data'
-IM = 'PGA'
+# IM = 'PGA'
+IM = 'sa_5hz'
 C = 0.8*10**-2
 
 class thet_arrays():

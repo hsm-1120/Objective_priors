@@ -710,5 +710,183 @@ ax.set_ylim(0,1)
 ax.set_title(r'accept rates for G-N posterior', fontsize=ftsize)
 
 
+## histogram only
+
+fig1 = plt.figure(24, figsize=(4.5,4))
+fig1.clf()
+ax1 = fig1.add_subplot(111)
+fig2 = plt.figure(25, figsize=(4.5,4))
+fig2.clf()
+ax2 = fig2.add_subplot(111)
+
+num_hist = 40
+arr_alp_hist, h_alp_hist = np.linspace(2,8, num=num_hist, retstep=True)
+arr_bet_hist, h_bet_hist = np.linspace(0.2,1.5, num=num_hist, retstep=True)
+
+for i,nnn in enumerate(cmc.tab_nn) :
+    num = cmc.num_est_tab[nnn]
+    nn = i
+
+    ax1.hist(cmc.th_post_jeff_tab[nn,:,0], bins=arr_alp_hist+i*h_alp_hist/cmc.num_plots, rwidth=1/cmc.num_plots, label=r'{}'.format(num), color=cmc.colors[i], density=True)
+    ax2.hist(cmc.th_post_jeff_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/cmc.num_plots, rwidth=1/cmc.num_plots, label=r'{}'.format(num), color=cmc.colors[i], density=True)
+    # axes52[1,1].hist(th_post_gam_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/num_plots, rwidth=1/num_plots, label=r'{}'.format(num), color=colors[i], density=True)
+
+
+ax1.legend()
+ax2.legend()
+# for ax in axes52.flatten():
+#     ax.legend()
+
+# for ax in axes52[0,:] :
+ax1.set_xlim(2,6)
+ax1.set_xlabel(r'$\alpha$', fontsize=ftsize)
+ax1.set_ylabel(r'post$(\alpha)$', fontsize=ftsize)
+# for ax in axes52[1,:] :
+ax2.set_xlim(0.23,1)
+ax2.set_xlabel(r'$\beta$', fontsize=ftsize)
+ax2.set_ylabel(r'post$(\beta)$', fontsize=ftsize)
+
+ax1.set_title(r'post($\alpha$) histogram from Jeffreys prior', fontsize=ftsize)
+ax2.set_title(r'post($\beta$) histogram from Jeffreys prior', fontsize=ftsize)
+
+
+
+fig1 = plt.figure(26, figsize=(4.5,4))
+fig1.clf()
+ax1 = fig1.add_subplot(111)
+fig2 = plt.figure(27, figsize=(4.5,4))
+fig2.clf()
+ax2 = fig2.add_subplot(111)
+
+num_hist = 40
+arr_alp_hist, h_alp_hist = np.linspace(2,8, num=num_hist, retstep=True)
+arr_bet_hist, h_bet_hist = np.linspace(0.2,1.5, num=num_hist, retstep=True)
+
+for i,nnn in enumerate(cmc.tab_nn) :
+    num = cmc.num_est_tab[nnn]
+    nn = i
+
+    ax1.hist(cmc.th_post_gam_tab[nn,:,0], bins=arr_alp_hist+i*h_alp_hist/cmc.num_plots, rwidth=1/cmc.num_plots, label=r'{}'.format(num), color=cmc.colors[i], density=True)
+    # axes52[0,1].hist(th_post_gam_tab[nn,:,0], bins=arr_alp_hist+i*h_alp_hist/num_plots, rwidth=1/num_plots, label=r'{}'.format(num), color=colors[i], density=True)
+    ax2.hist(cmc.th_post_gam_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/cmc.num_plots, rwidth=1/cmc.num_plots, label=r'{}'.format(num), color=cmc.colors[i], density=True)
+    # axes52[1,1].hist(th_post_gam_tab[nn,:,1], bins=arr_bet_hist+i*h_bet_hist/num_plots, rwidth=1/num_plots, label=r'{}'.format(num), color=colors[i], density=True)
+
+
+ax1.legend()
+ax2.legend()
+# for ax in axes52.flatten():
+#     ax.legend()
+
+# for ax in axes52[0,:] :
+ax1.set_xlim(2,6)
+ax1.set_xlabel(r'$\alpha$', fontsize=ftsize)
+ax1.set_ylabel(r'post$(\alpha)$', fontsize=ftsize)
+# for ax in axes52[1,:] :
+ax2.set_xlim(0.23,1)
+ax2.set_xlabel(r'$\beta$', fontsize=ftsize)
+ax2.set_ylabel(r'post$(\beta)$', fontsize=ftsize)
+
+ax1.set_title(r'post($\alpha$) histogram from G-N prior', fontsize=ftsize)
+ax2.set_title(r'post($\beta$) histogram from G-N prior', fontsize=ftsize)
+
+
+### avg alph/bet only
+
+
+fig1 = plt.figure(28, figsize=(4.7,4))
+fig1.clf()
+ax1 = fig1.add_subplot(111)
+fig2 = plt.figure(29, figsize=(4.7,4))
+fig2.clf()
+ax2 = fig2.add_subplot(111)
+
+
+
+ax1.set_xlabel(r'iterations', fontsize=ftsize)
+ax2.set_xlabel(r'iterations', fontsize=ftsize)
+
+
+
+num_kept_HM_fin = cmc.th_post_jeff_tot_tab[nn,:,0].shape[0]
+for i,nnn in enumerate(cmc.tab_nn) :
+    num = cmc.num_est_tab[nnn]
+    nn = i
+
+    ax1.plot(cmc.th_post_jeff_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cmc.colors[i], label=r'{}'.format(num))
+    # axes52bis[1].plot(th_post_gam_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i], label=r'{}'.format(num))
+    ax2.plot(cmc.th_post_jeff_tot_tab[nn,:,1].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cmc.colors[i], label=r'{}'.format(num))
+    # axes52bis[3].plot(th_post_gam_tot_tab[nn,:,1].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i], label=r'{}'.format(num))
+
+
+
+ax1.set_ylabel(r'$E[\alpha]$', fontsize=ftsize)
+ax2.set_ylabel(r'$E[\beta]$', fontsize=ftsize)
+
+ax1.legend()
+ax2.legend()
+
+ax1.set_title(r'convergence of $\alpha$ from Jeff prior', fontsize=ftsize)
+ax2.set_title(r'convergence of $\beta$ from Jeff prior', fontsize=ftsize)
+
+
+
+
+
+
+fig1 = plt.figure(30, figsize=(4.7,4))
+fig1.clf()
+ax1 = fig1.add_subplot(111)
+fig2 = plt.figure(31, figsize=(4.7,4))
+fig2.clf()
+ax2 = fig2.add_subplot(111)
+
+
+
+ax1.set_xlabel(r'iterations', fontsize=ftsize)
+ax2.set_xlabel(r'iterations', fontsize=ftsize)
+
+
+
+num_kept_HM_fin = cmc.th_post_gam_tot_tab[nn,:,0].shape[0]
+for i,nnn in enumerate(cmc.tab_nn) :
+    num = cmc.num_est_tab[nnn]
+    nn = i
+
+    ax1.plot(cmc.th_post_gam_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cmc.colors[i], label=r'{}'.format(num))
+    # axes52bis[1].plot(th_post_gam_tot_tab[nn,:,0].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i], label=r'{}'.format(num))
+    ax2.plot(cmc.th_post_gam_tot_tab[nn,:,1].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cmc.colors[i], label=r'{}'.format(num))
+    # axes52bis[3].plot(th_post_gam_tot_tab[nn,:,1].cumsum()/np.arange(1,num_kept_HM_fin+1), '--', color=cl_colors[i], label=r'{}'.format(num))
+
+
+
+ax1.set_ylabel(r'$E[\alpha]$', fontsize=ftsize)
+ax2.set_ylabel(r'$E[\beta]$', fontsize=ftsize)
+
+ax1.legend()
+ax2.legend()
+
+ax1.set_title(r'convergence of $\alpha$ from G-N prior', fontsize=ftsize)
+ax2.set_title(r'convergence of $\beta$ from G-N prior', fontsize=ftsize)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
